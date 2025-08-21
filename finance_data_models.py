@@ -1,0 +1,108 @@
+from datetime import date, datetime
+from typing import List
+from typing import Optional
+from sqlalchemy import ForeignKey, String, Numeric, Date, DateTime, create_engine, select
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+# Account through which transactions are done (e.g., bank account)
+class Account(Base):
+
+    __tablename__ = "Account"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    account_number: Mapped[str] = mapped_column(String(30))
+    name: Mapped[str] = mapped_column(String(100))
+
+    # E.g. bank (PNC, 5/3, Wells Fargo)
+    debt_entity: Mapped[str] = mapped_column(String(50))
+
+    description: Mapped[str] = mapped_column(String(200), nullable=True)
+
+    date_created: Mapped[date] = mapped_column(Date)
+
+    transactions: Mapped[List["Transaction"]] = relationship(
+        back_populates="account", cascade="all, delete-orphan"         ##TODO: is there a way to NULL out orphans here? Just remove the foreign key constraint?
+    )
+
+
+# Financial transaction (credit or debit)
+class Transaction(Base):
+    __tablename__ = "Transaction"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    amount: Mapped[float] = mapped_column(Numeric(10, 2))
+
+    # Source of transaction (e.g, store, Amazon, work)
+    source: Mapped[str] = mapped_column(String(50))
+
+    # Account
+    account_id = mapped_column(ForeignKey(Account.id))
+    account: Mapped["Account"] = relationship(back_populates="transactions")
+
+    description: Mapped[str] = mapped_column(String(100), nullable=True)
+    notes: Mapped[str] = mapped_column(String(200), nullable=True)
+
+    # Dates relevant to transaction
+    date_created: Mapped[date] = mapped_column(Date)
+    date_processed: Mapped[date] = mapped_column(Date, nullable=True)
+
+    date_imported:Mapped[datetime] = mapped_column(DateTime)
+
+
+def db_connect(config_vals):
+    return create_engine(f"mysql+pymysql://{config_vals['user']}:{config_vals['password']}@{config_vals['host']}:3306/{config_vals['database']}",
+                         echo=True)
+
+
+def create_db_from_models(engine, drop_all=False):
+    if drop_all:
+        Base.metadata.drop_all(engine)
+
+    # Create DB schema from models
+    Base.metadata.create_all(engine)
+
+    return Base
+
+
+def account_exists(account_name, engine,session=None):
+    if session is None:
+        session=Session(engine)
+    stmt = select(Account).where(Account.name == account_name).exists()
+    return session.scalar(select(stmt))
+
+
+def test_create_account(engine):
+    session = Session(engine)
+    fifth_third = Account(
+        account_number='66666666',
+        name='Fifth Third Checking',
+        debt_entity="Fifth Third Bank",
+        description="routing no=434q3452456",
+        date_created=date.today()
+    )
+    session.add_all([fifth_third])
+    session.commit()
+
+
+def test_add_transaction(engine):
+    session = Session(engine)
+    stmt = select(Account).where(Account.name=="Fifth Third Checking")
+    account = session.scalars(stmt).one()
+
+    trans = Transaction(
+        amount="69.24",
+        source="Amazon",
+        account=account,
+        date_created=datetime.strptime("2024-01-01", "%Y-%m-%d"),
+        date_imported=datetime.strptime("2024-01-03 02:34:00", "%Y-%m-%d %H:%M:%S")
+
+    )
+    session.add_all([trans])
+    session.commit()

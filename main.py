@@ -1,0 +1,36 @@
+
+import os
+from dotenv import load_dotenv
+from finance_data_models import create_db_from_models, db_connect, test_add_transaction
+from import_tools import import_accounts
+
+
+def load_creds():
+    load_dotenv()
+
+    config_vals = {
+        "host": os.getenv('DB_HOST'),
+        "user": os.getenv('DB_USER'),
+        "password": os.getenv('DB_PASS'),
+        "database": os.getenv('DB_DB'),
+        "drop_and_recreate": os.getenv('DROP_AND_RECREATE').upper() == "TRUE",
+        "import_accounts": os.getenv('IMPORT_ACCOUNTS').upper() == "TRUE"
+
+    }
+
+    return config_vals
+
+
+if __name__ == '__main__':
+
+    config_vals = load_creds()
+    engine = db_connect(config_vals)
+    create_db_from_models(engine,
+                          drop_all=config_vals["drop_and_recreate"]
+                          )
+
+    if config_vals["import_accounts"]:
+        import_accounts("import/accounts.csv",engine)
+
+    # TEST
+    test_add_transaction(engine)
