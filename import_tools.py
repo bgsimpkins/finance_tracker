@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from finance_data_models import Account, account_exists
+from finance_data_models import Account, Transaction, account_exists
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -24,3 +24,45 @@ def import_accounts(filepath, engine):
             session.commit()
         else:
             print(f"account {row['name']} exists!")
+
+def import_statement_chase_slate(filepath, engine):
+    # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
+    #  Split row with space. First element is date, last is amount, rest is source
+
+    # Filename should be format "chase_<year>.txt"
+    filename = filepath.split("/")[-1]
+    year = filename[6:10]
+    print(f"filename={filename}")
+
+    session = Session(engine)
+    stmt = select(Account).where(Account.name == "Chase Slate")
+    account = session.scalars(stmt).one()
+
+    with open(filepath) as diary_file:
+
+        for line in diary_file:
+
+            line_spl = line.split(" ")
+
+            # Date is first element
+            date = f"{line_spl[0]}/{year}"
+            date = datetime.strptime(date, "%m/%d/%Y")
+
+            # Amount is last
+            amount = line_spl[-1]
+
+            # Everything else is source (including location and city,state) TODO: Could parse these out
+            source = " ".join(line_spl[1:-1])
+
+            print(f"date={date} | amount={amount} | source={source}")
+
+            trans = Transaction(
+                amount=amount,
+                source=source,
+                account=account,
+                date_created=date,
+                date_imported=datetime.now()
+            )
+            session.add(trans)
+            session.commit()
+

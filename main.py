@@ -2,7 +2,7 @@
 import os
 from dotenv import load_dotenv
 from finance_data_models import create_db_from_models, db_connect, test_add_transaction
-from import_tools import import_accounts
+from import_tools import import_accounts, import_statement_chase_slate
 
 
 def load_creds():
@@ -21,6 +21,20 @@ def load_creds():
     return config_vals
 
 
+def do_imports(engine, config_vals):
+
+    # Loop through imports/ dir and process
+    for f in os.listdir("import"):
+
+        if f == "accounts.csv" and config_vals["import_accounts"]:
+            import_accounts("import/accounts.csv", engine)
+        elif f[0:5] == "chase":
+            import_statement_chase_slate(f"import/{f}", engine)
+
+
+
+
+
 if __name__ == '__main__':
 
     config_vals = load_creds()
@@ -29,8 +43,10 @@ if __name__ == '__main__':
                           drop_all=config_vals["drop_and_recreate"]
                           )
 
-    if config_vals["import_accounts"]:
-        import_accounts("import/accounts.csv",engine)
+    do_imports(engine, config_vals)
 
     # TEST
-    test_add_transaction(engine)
+    # test_add_transaction(engine)
+
+
+
