@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -7,7 +8,7 @@ from sqlalchemy import select
 
 
 def import_accounts(filepath, engine):
-    df = pd.read_csv(filepath)
+    df = pd.read_csv(f"import/{filepath}")
     df = df.replace({np.nan}, None)     # Pandas converts empty cells to NAN. Covert to None/NULL
     session = Session(engine)
     for i, row in df.iterrows():
@@ -25,12 +26,13 @@ def import_accounts(filepath, engine):
         else:
             print(f"account {row['name']} exists!")
 
-def import_statement_chase_slate(filepath, engine):
+
+def import_statement_chase_slate(filename, engine):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
     #  Split row with space. First element is date, last is amount, rest is source
 
-    # Filename should be format "chase_<year>.txt"
-    filename = filepath.split("/")[-1]
+    # Filename should be format "chase_<year>_<month>.txt"
+    filepath = f"import/{filename}"
     year = filename[6:10]
     print(f"filename={filename}")
 
@@ -38,9 +40,9 @@ def import_statement_chase_slate(filepath, engine):
     stmt = select(Account).where(Account.name == "Chase Slate")
     account = session.scalars(stmt).one()
 
-    with open(filepath) as diary_file:
+    with open(filepath) as file:
 
-        for line in diary_file:
+        for line in file:
 
             line_spl = line.split(" ")
 
@@ -50,6 +52,9 @@ def import_statement_chase_slate(filepath, engine):
 
             # Amount is last
             amount = line_spl[-1]
+
+            #Remove thousands separator
+            amount = amount.replace(",","")
 
             # Everything else is source (including location and city,state) TODO: Could parse these out
             source = " ".join(line_spl[1:-1])
@@ -64,5 +69,11 @@ def import_statement_chase_slate(filepath, engine):
                 date_imported=datetime.now()
             )
             session.add(trans)
-            session.commit()
+
+        session.commit()
+
+        os.rename(filepath, f"import/archive/{filename}")
+
+
+
 

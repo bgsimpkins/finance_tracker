@@ -27,9 +27,9 @@ def do_imports(engine, config_vals):
     for f in os.listdir("import"):
 
         if f == "accounts.csv" and config_vals["import_accounts"]:
-            import_accounts("import/accounts.csv", engine)
+            import_accounts("accounts.csv", engine)
         elif f[0:5] == "chase":
-            import_statement_chase_slate(f"import/{f}", engine)
+            import_statement_chase_slate(f"{f}", engine)
 
 
 
