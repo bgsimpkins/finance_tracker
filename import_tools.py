@@ -22,9 +22,11 @@ def import_accounts(filepath, engine):
                 date_created=datetime.strptime(row["date_created"], "%Y-%m-%d")
             )
             session.add(account)
-            session.commit()
+
         else:
             print(f"account {row['name']} exists!")
+
+    session.commit()
 
 
 def import_statement_chase_slate(filename, engine):
