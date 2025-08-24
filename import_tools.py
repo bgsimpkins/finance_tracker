@@ -58,14 +58,14 @@ def import_statement_chase_slate(filename, engine):
             #Remove thousands separator
             amount = amount.replace(",","")
 
-            # Everything else is source (including location and city,state) TODO: Could parse these out
-            source = " ".join(line_spl[1:-1])
+            # Everything else is description (including location and city,state) TODO: Could parse these out
+            description = " ".join(line_spl[1:-1])
 
-            print(f"date={date} | amount={amount} | source={source}")
+            print(f"date={date} | amount={amount} | description={description}")
 
             trans = Transaction(
                 amount=amount,
-                source=source,
+                description=description,
                 account=account,
                 date_created=date,
                 date_imported=datetime.now()
@@ -77,5 +77,47 @@ def import_statement_chase_slate(filename, engine):
         os.rename(filepath, f"import/archive/{filename}")
 
 
+def import_statement_fifth_third_checking(filename, engine):
+    # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
+    #  Split row with space. First element is date, last is amount, rest is source
 
+    # Filename should be format "fifth_third_<year>_<month>.txt"
+    filepath = f"import/{filename}"
+    year = filename[12:16]
+    print(f"filename={filename}")
 
+    session = Session(engine)
+    stmt = select(Account).where(Account.name == "Fifth Third Checking")
+    account = session.scalars(stmt).one()
+
+    with open(filepath) as file:
+        for line in file:
+            line_spl = line.split(" ")
+
+            # Date is first element
+            date = f"{line_spl[0]}/{year}"
+            date = datetime.strptime(date, "%m/%d/%Y")
+
+            # Amount is second
+            amount = line_spl[1]
+
+            # Remove thousands separator
+            amount = amount.replace(",", "")
+
+            # Everything else is description (including location and city,state) TODO: Could parse these out
+            description = " ".join(line_spl[2:-1])
+
+            print(f"date={date} | amount={amount} | description={description}")
+
+            trans = Transaction(
+                amount=amount,
+                description=description,
+                account=account,
+                date_created=date,
+                date_imported=datetime.now()
+            )
+            session.add(trans)
+
+        session.commit()
+
+        os.rename(filepath, f"import/archive/{filename}")

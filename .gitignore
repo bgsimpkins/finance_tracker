@@ -208,7 +208,7 @@ __marimo__/
 
 # import files
 import/*
-!/import/archive
+import/archive
 
 #idea
 .idea/

@@ -40,13 +40,14 @@ class Transaction(Base):
     amount: Mapped[float] = mapped_column(Numeric(10, 2))
 
     # Source of transaction (e.g, store, Amazon, work)
-    source: Mapped[str] = mapped_column(String(50))
+    source: Mapped[str] = mapped_column(String(50), nullable=True)
 
     # Account
     account_id = mapped_column(ForeignKey(Account.id))
     account: Mapped["Account"] = relationship(back_populates="transactions")
 
-    description: Mapped[str] = mapped_column(String(100), nullable=True)
+    # Description in transaction (required)
+    description: Mapped[str] = mapped_column(String(100))
     notes: Mapped[str] = mapped_column(String(200), nullable=True)
 
     # Dates relevant to transaction

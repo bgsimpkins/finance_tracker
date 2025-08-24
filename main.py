@@ -2,7 +2,7 @@
 import os
 from dotenv import load_dotenv
 from finance_data_models import create_db_from_models, db_connect, test_add_transaction
-from import_tools import import_accounts, import_statement_chase_slate
+from import_tools import import_accounts, import_statement_chase_slate, import_statement_fifth_third_checking
 
 
 def load_creds():
@@ -30,6 +30,8 @@ def do_imports(engine, config_vals):
             import_accounts("accounts.csv", engine)
         elif f[0:5] == "chase":
             import_statement_chase_slate(f"{f}", engine)
+        elif f[0:11] == "fifth_third":
+            import_statement_fifth_third_checking(f"{f}", engine)
 
 
 
