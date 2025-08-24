@@ -121,3 +121,53 @@ def import_statement_fifth_third_checking(filename, engine):
         session.commit()
 
         os.rename(filepath, f"import/archive/{filename}")
+
+def import_statement_wells_fargo(filename, engine):
+    # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
+    #  Split row with space. First element is date, last is amount, rest is source
+
+    # Filename should be format "fifth_third_<year>_<month>.txt"
+    filepath = f"import/{filename}"
+    year = filename[12:16]
+    print(f"filename={filename}")
+
+    session = Session(engine)
+    stmt = select(Account).where(Account.name == "Wells Fargo Credit")
+    account = session.scalars(stmt).one()
+
+    with open(filepath) as file:
+        for line in file:
+            line_spl = line.split(" ")
+
+            # Date is second
+            date = f"{line_spl[1]}/{year}"
+            date = datetime.strptime(date, "%m/%d/%Y")
+
+            # Amount is last
+            amount = line_spl[-1]
+
+            # Remove thousands separator
+            amount = amount.replace(",", "")
+
+            # What looks like a transaction number is fourth. Add to notes
+            trans_number = line_spl[3]
+
+            # Description is fifth to second to last
+            description = " ".join(line_spl[4:-1])
+
+
+            print(f"date={date} | amount={amount} | description={description}")
+
+            trans = Transaction(
+                amount=amount,
+                description=description,
+                notes=trans_number,
+                account=account,
+                date_created=date,
+                date_imported=datetime.now()
+            )
+            session.add(trans)
+
+        session.commit()
+
+        os.rename(filepath, f"import/archive/{filename}")
