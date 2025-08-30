@@ -12,7 +12,6 @@ class Base(DeclarativeBase):
 
 # Account through which transactions are done (e.g., bank account)
 class Account(Base):
-
     __tablename__ = "Account"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -32,7 +31,50 @@ class Account(Base):
     )
 
 
-# Financial transaction (credit or debit)
+# Category of transaction. Allows higher-order analytics/tracking
+class TransactionCategory(Base):
+    __tablename__ = "TransactionCategory"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    name: Mapped[str] = mapped_column(String(100))
+
+    description: Mapped[str] = mapped_column(String(200), nullable=True)
+
+    date_created: Mapped[date] = mapped_column(Date)
+
+    transactions: Mapped[List["Transaction"]] = relationship(
+        back_populates="category", cascade="all, delete-orphan"         ##TODO: is there a way to NULL out orphans here? Just remove the foreign key constraint?
+    )
+
+    category_mappings: Mapped[List["CategoryMapping"]] = relationship(
+        back_populates="category", cascade="all, delete-orphan"
+    )
+
+
+# Encapsulate logic to map TransactionCategory to Transactions (e.g., 1:1, keywords, more complex matching rules)
+class CategoryMapping (Base):
+    __tablename__ = "CategoryMapping"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    # Value to be mapped to category (e.g., Transaction to description)
+    source_value: Mapped[str] = mapped_column(String(200))
+
+    # Indicator for rule/operato used to map source_value to category
+    # TODO: Could snowflake mapping rules out into their own table..
+    mapping_rule: Mapped[str] = mapped_column(String(100))
+
+    category_id = mapped_column(ForeignKey(TransactionCategory.id))
+    category: Mapped["TransactionCategory"] = relationship(back_populates="category_mappings")
+
+    description: Mapped[str] = mapped_column(String(200), nullable=True)
+
+    date_created: Mapped[date] = mapped_column(Date)
+
+
+# Financial transaction
+# (credit or debit)
 class Transaction(Base):
     __tablename__ = "Transaction"
 
@@ -45,6 +87,10 @@ class Transaction(Base):
     # Account
     account_id = mapped_column(ForeignKey(Account.id))
     account: Mapped["Account"] = relationship(back_populates="transactions")
+
+    # Category
+    category_id = mapped_column(ForeignKey(TransactionCategory.id))
+    category: Mapped["TransactionCategory"] = relationship(back_populates="transactions")
 
     # Description in transaction (required)
     description: Mapped[str] = mapped_column(String(100))

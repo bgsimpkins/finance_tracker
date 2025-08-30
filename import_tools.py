@@ -2,7 +2,8 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from finance_data_models import Account, Transaction, account_exists
+from finance_data_models import Account, Transaction, TransactionCategory, account_exists
+from rule_logic import do_category_mapping
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -64,9 +65,10 @@ def import_statement_chase_slate(filename, engine):
             print(f"date={date} | amount={amount} | description={description}")
 
             trans = Transaction(
-                amount=amount,
+                amount=-float(amount),
                 description=description,
                 account=account,
+                category=do_category_mapping(description, session),
                 date_created=date,
                 date_imported=datetime.now()
             )
@@ -110,9 +112,10 @@ def import_statement_fifth_third_checking(filename, engine):
             print(f"date={date} | amount={amount} | description={description}")
 
             trans = Transaction(
-                amount=amount,
+                amount=-float(amount),
                 description=description,
                 account=account,
+                category=do_category_mapping(description, session),
                 date_created=date,
                 date_imported=datetime.now()
             )
@@ -121,6 +124,7 @@ def import_statement_fifth_third_checking(filename, engine):
         session.commit()
 
         os.rename(filepath, f"import/archive/{filename}")
+
 
 def import_statement_wells_fargo(filename, engine):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
@@ -159,10 +163,11 @@ def import_statement_wells_fargo(filename, engine):
             print(f"date={date} | amount={amount} | description={description}")
 
             trans = Transaction(
-                amount=amount,
+                amount=-float(amount),
                 description=description,
                 notes=trans_number,
                 account=account,
+                category=do_category_mapping(description, session),
                 date_created=date,
                 date_imported=datetime.now()
             )
