@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from finance_data_models import create_db_from_models, db_connect, test_add_transaction
 from import_tools import import_accounts, import_categories, import_category_mappings, import_statement_chase_slate, import_statement_fifth_third_checking, import_statement_wells_fargo
-
+from sqlalchemy.orm import Session
 
 def load_creds():
     load_dotenv()
@@ -25,21 +25,22 @@ def load_creds():
 
 def do_imports(engine, config_vals):
 
+    session = Session(engine)
     # Loop through imports/ dir and process
     for f in os.listdir("import"):
 
         if f == "accounts.csv" and config_vals["import_accounts"]:
-            import_accounts("accounts.csv", engine)
+            import_accounts("accounts.csv", session)
         elif f == "categories.csv" and config_vals["import_categories"]:
-            import_categories("categories.csv", engine)
+            import_categories("categories.csv", session)
         elif f == "category_mappings.csv" and config_vals["import_category_mappings"]:
-            import_category_mappings("category_mappings.csv", engine)
+            import_category_mappings("category_mappings.csv", session)
         elif f[0:5] == "chase":
-            import_statement_chase_slate(f"{f}", engine)
+            import_statement_chase_slate(f"{f}", session)
         elif f[0:11] == "fifth_third":
-            import_statement_fifth_third_checking(f"{f}", engine)
+            import_statement_fifth_third_checking(f"{f}", session)
         elif f[0:11] == "wells_fargo":
-            import_statement_wells_fargo(f"{f}", engine)
+            import_statement_wells_fargo(f"{f}", session)
 
 
 if __name__ == '__main__':
@@ -49,7 +50,6 @@ if __name__ == '__main__':
     create_db_from_models(engine,
                           drop_all=config_vals["drop_and_recreate"]
                           )
-
 
     do_imports(engine, config_vals)
 

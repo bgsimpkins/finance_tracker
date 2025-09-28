@@ -120,9 +120,11 @@ def db_connect(config_vals):
 
 def create_db_from_models(engine, drop_all=False):
     if drop_all:
+        print("Purging DB objects...")
         Base.metadata.drop_all(engine)
 
     # Create DB schema from models
+    print("Creating DB objects from models...")
     Base.metadata.create_all(engine)
 
     return Base

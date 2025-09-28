@@ -4,15 +4,13 @@ import numpy as np
 from datetime import datetime
 from finance_data_models import Account, Transaction, TransactionCategory, CategoryMapping, get_account_for_name, get_category_for_name
 from rule_logic import do_category_mapping
-from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 
-def import_accounts(filepath, engine):
+def import_accounts(filepath, session):
     print('importing accounts...')
     df = pd.read_csv(f"import/{filepath}")
     df = df.replace({np.nan}, None)     # Pandas converts empty cells to NAN. Covert to None/NULL
-    session = Session(engine)
     for i, row in df.iterrows():
 
         if not get_account_for_name(row["name"], session):
@@ -29,14 +27,13 @@ def import_accounts(filepath, engine):
             print(f"account {row['name']} exists!")
 
     session.commit()
-    session.close()
 
 
-def import_categories(filepath, engine):
+def import_categories(filepath, session):
     print('importing categories...')
     df = pd.read_csv(f"import/{filepath}")
     df = df.replace({np.nan}, None)  # Pandas converts empty cells to NAN. Covert to None/NULL
-    session = Session(engine)
+
     for i, row in df.iterrows():
         if not get_category_for_name(row["name"], session):
             print(f"Adding category- {row['name']}")
@@ -53,14 +50,13 @@ def import_categories(filepath, engine):
             print(f"category {row['name']} exists!")
 
     session.commit()
-    session.close()
 
 
-def import_category_mappings(filepath, engine):
+def import_category_mappings(filepath, session):
     print('importing category mappings...')
     df = pd.read_csv(f"import/{filepath}")
     df = df.replace({np.nan}, None)  # Pandas converts empty cells to NAN. Covert to None/NULL
-    session = Session(engine)
+
     for i, row in df.iterrows():
         category_id = get_category_for_name(row["category_name"], session)
         if category_id:
@@ -80,7 +76,7 @@ def import_category_mappings(filepath, engine):
     session.commit()
 
 
-def import_statement_chase_slate(filename, engine):
+def import_statement_chase_slate(filename, session):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
     #  Split row with space. First element is date, last is amount, rest is source
     print('importing chase slate files...')
@@ -89,7 +85,6 @@ def import_statement_chase_slate(filename, engine):
     year = filename[6:10]
     print(f"filename={filename}")
 
-    session = Session(engine)
     stmt = select(Account).where(Account.name == "Chase Slate")
     account = session.scalars(stmt).one()
 
@@ -129,7 +124,7 @@ def import_statement_chase_slate(filename, engine):
         os.rename(filepath, f"import/archive/{filename}")
 
 
-def import_statement_fifth_third_checking(filename, engine):
+def import_statement_fifth_third_checking(filename, session):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
     #  Split row with space. First element is date, last is amount, rest is source
 
@@ -139,7 +134,6 @@ def import_statement_fifth_third_checking(filename, engine):
     year = filename[12:16]
     print(f"filename={filename}")
 
-    session = Session(engine)
     stmt = select(Account).where(Account.name == "Fifth Third Checking")
     account = session.scalars(stmt).one()
 
@@ -176,7 +170,7 @@ def import_statement_fifth_third_checking(filename, engine):
         os.rename(filepath, f"import/archive/{filename}")
 
 
-def import_statement_wells_fargo(filename, engine):
+def import_statement_wells_fargo(filename, session):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
     #  Split row with space. First element is date, last is amount, rest is source
 
@@ -186,7 +180,6 @@ def import_statement_wells_fargo(filename, engine):
     year = filename[12:16]
     print(f"filename={filename}")
 
-    session = Session(engine)
     stmt = select(Account).where(Account.name == "Wells Fargo Credit")
     account = session.scalars(stmt).one()
 
