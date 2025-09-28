@@ -2,19 +2,20 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from finance_data_models import Account, Transaction, TransactionCategory, account_exists
+from finance_data_models import Account, Transaction, TransactionCategory, CategoryMapping, get_account_for_name, get_category_for_name
 from rule_logic import do_category_mapping
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 
 def import_accounts(filepath, engine):
+    print('importing accounts...')
     df = pd.read_csv(f"import/{filepath}")
     df = df.replace({np.nan}, None)     # Pandas converts empty cells to NAN. Covert to None/NULL
     session = Session(engine)
     for i, row in df.iterrows():
 
-        if not account_exists(row["name"], engine):
+        if not get_account_for_name(row["name"], session):
             account = Account(
                 account_number=row["account_number"],
                 name=row["name"],
@@ -28,12 +29,61 @@ def import_accounts(filepath, engine):
             print(f"account {row['name']} exists!")
 
     session.commit()
+    session.close()
+
+
+def import_categories(filepath, engine):
+    print('importing categories...')
+    df = pd.read_csv(f"import/{filepath}")
+    df = df.replace({np.nan}, None)  # Pandas converts empty cells to NAN. Covert to None/NULL
+    session = Session(engine)
+    for i, row in df.iterrows():
+        if not get_category_for_name(row["name"], session):
+            print(f"Adding category- {row['name']}")
+            category = TransactionCategory(
+                name=row["name"],
+                description=row["description"],
+                parent=row["parent"],
+                need_flag=row["need_flag"],
+                priority=row["priority"],
+                date_created=datetime.now()
+            )
+            session.add(category)
+        else:
+            print(f"category {row['name']} exists!")
+
+    session.commit()
+    session.close()
+
+
+def import_category_mappings(filepath, engine):
+    print('importing category mappings...')
+    df = pd.read_csv(f"import/{filepath}")
+    df = df.replace({np.nan}, None)  # Pandas converts empty cells to NAN. Covert to None/NULL
+    session = Session(engine)
+    for i, row in df.iterrows():
+        category_id = get_category_for_name(row["category_name"], session)
+        if category_id:
+            mapping = CategoryMapping(
+                source_value=row["source_value"],
+                mapping_rule=row["mapping_rule"],
+                param1=row["param1"],
+                param2=row["param2"],
+                category_id=category_id,
+                description=row["description"],
+                date_created=datetime.now()
+            )
+            session.add(mapping)
+        else:
+            print(f"Can't find freaking category for mapping!!!! {row['category_name']}")
+
+    session.commit()
 
 
 def import_statement_chase_slate(filename, engine):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
     #  Split row with space. First element is date, last is amount, rest is source
-
+    print('importing chase slate files...')
     # Filename should be format "chase_<year>_<month>.txt"
     filepath = f"import/{filename}"
     year = filename[6:10]
@@ -83,6 +133,7 @@ def import_statement_fifth_third_checking(filename, engine):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
     #  Split row with space. First element is date, last is amount, rest is source
 
+    print('importing fifth third files...')
     # Filename should be format "fifth_third_<year>_<month>.txt"
     filepath = f"import/{filename}"
     year = filename[12:16]
@@ -122,7 +173,6 @@ def import_statement_fifth_third_checking(filename, engine):
             session.add(trans)
 
         session.commit()
-
         os.rename(filepath, f"import/archive/{filename}")
 
 
@@ -130,6 +180,7 @@ def import_statement_wells_fargo(filename, engine):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
     #  Split row with space. First element is date, last is amount, rest is source
 
+    print('importing well fargo files...')
     # Filename should be format "fifth_third_<year>_<month>.txt"
     filepath = f"import/{filename}"
     year = filename[12:16]

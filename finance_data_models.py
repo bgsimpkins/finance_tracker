@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import List
 from typing import Optional
-from sqlalchemy import ForeignKey, String, Numeric, Date, DateTime, create_engine, select
+from sqlalchemy import ForeignKey, Integer, String, Numeric, Boolean, Date, DateTime, create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -41,6 +41,12 @@ class TransactionCategory(Base):
 
     description: Mapped[str] = mapped_column(String(200), nullable=True)
 
+    parent: Mapped[str] = mapped_column(String(100), nullable=True)
+
+    need_flag: Mapped[bool] = mapped_column(Boolean)
+
+    priority: Mapped[int] = mapped_column(Integer)
+
     date_created: Mapped[date] = mapped_column(Date)
 
     transactions: Mapped[List["Transaction"]] = relationship(
@@ -64,6 +70,10 @@ class CategoryMapping (Base):
     # Indicator for rule/operato used to map source_value to category
     # TODO: Could snowflake mapping rules out into their own table..
     mapping_rule: Mapped[str] = mapped_column(String(100))
+
+    #Parameters
+    param1: Mapped[str] = mapped_column(String(200), nullable=True)
+    param2: Mapped[str] = mapped_column(String(200), nullable=True)
 
     category_id = mapped_column(ForeignKey(TransactionCategory.id))
     category: Mapped["TransactionCategory"] = relationship(back_populates="category_mappings")
@@ -105,7 +115,7 @@ class Transaction(Base):
 
 def db_connect(config_vals):
     return create_engine(f"mysql+pymysql://{config_vals['user']}:{config_vals['password']}@{config_vals['host']}:3306/{config_vals['database']}",
-                         echo=True)
+                         echo=False)
 
 
 def create_db_from_models(engine, drop_all=False):
@@ -118,10 +128,13 @@ def create_db_from_models(engine, drop_all=False):
     return Base
 
 
-def account_exists(account_name, engine,session=None):
-    if session is None:
-        session=Session(engine)
+def get_account_for_name(account_name, session):
     stmt = select(Account).where(Account.name == account_name).exists()
+    return session.scalar(select(stmt))
+
+
+def get_category_for_name(category_name,session):
+    stmt = select(TransactionCategory).where(TransactionCategory.name == category_name).exists()
     return session.scalar(select(stmt))
 
 
