@@ -129,15 +129,15 @@ def create_db_from_models(engine, drop_all=False):
 
     return Base
 
-
-def get_account_for_name(account_name, session):
+# TODO: Should just return account?
+def account_exists(account_name, session):
     stmt = select(Account).where(Account.name == account_name).exists()
     return session.scalar(select(stmt))
 
 
-def get_category_for_name(category_name,session):
-    stmt = select(TransactionCategory).where(TransactionCategory.name == category_name).exists()
-    return session.scalar(select(stmt))
+def get_category_for_name(category_name, session) -> TransactionCategory:
+    stmt = select(TransactionCategory).where(TransactionCategory.name == category_name)
+    return session.scalar(stmt)
 
 
 def test_create_account(engine):

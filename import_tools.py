@@ -2,8 +2,8 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from finance_data_models import Account, Transaction, TransactionCategory, CategoryMapping, get_account_for_name, get_category_for_name
-from rule_logic import do_category_mapping
+from finance_data_models import Account, Transaction, TransactionCategory, CategoryMapping, account_exists, get_category_for_name
+from rule_logic import CategoryMapper
 from sqlalchemy import select
 
 
@@ -13,7 +13,7 @@ def import_accounts(filepath, session):
     df = df.replace({np.nan}, None)     # Pandas converts empty cells to NAN. Covert to None/NULL
     for i, row in df.iterrows():
 
-        if not get_account_for_name(row["name"], session):
+        if not account_exists(row["name"], session):
             account = Account(
                 account_number=row["account_number"],
                 name=row["name"],
@@ -58,14 +58,14 @@ def import_category_mappings(filepath, session):
     df = df.replace({np.nan}, None)  # Pandas converts empty cells to NAN. Covert to None/NULL
 
     for i, row in df.iterrows():
-        category_id = get_category_for_name(row["category_name"], session)
-        if category_id:
+        category = get_category_for_name(row["category_name"], session)
+        if category:
             mapping = CategoryMapping(
                 source_value=row["source_value"],
                 mapping_rule=row["mapping_rule"],
                 param1=row["param1"],
                 param2=row["param2"],
-                category_id=category_id,
+                category_id=category.id,
                 description=row["description"],
                 date_created=datetime.now()
             )
