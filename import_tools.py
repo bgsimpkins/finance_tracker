@@ -76,7 +76,7 @@ def import_category_mappings(filepath, session):
     session.commit()
 
 
-def import_statement_chase_slate(filename, session):
+def import_statement_chase_slate(filename, session, category_mapper:CategoryMapper):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
     #  Split row with space. First element is date, last is amount, rest is source
     print('importing chase slate files...')
@@ -113,7 +113,7 @@ def import_statement_chase_slate(filename, session):
                 amount=-float(amount),
                 description=description,
                 account=account,
-                category=do_category_mapping(description, session),
+                category=category_mapper.do_category_mapping(description, session),
                 date_created=date,
                 date_imported=datetime.now()
             )
@@ -124,7 +124,7 @@ def import_statement_chase_slate(filename, session):
         os.rename(filepath, f"import/archive/{filename}")
 
 
-def import_statement_fifth_third_checking(filename, session):
+def import_statement_fifth_third_checking(filename, session, category_mapper):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
     #  Split row with space. First element is date, last is amount, rest is source
 
@@ -160,7 +160,7 @@ def import_statement_fifth_third_checking(filename, session):
                 amount=-float(amount),
                 description=description,
                 account=account,
-                category=do_category_mapping(description, session),
+                category=category_mapper.do_category_mapping(description, session),
                 date_created=date,
                 date_imported=datetime.now()
             )
@@ -170,7 +170,7 @@ def import_statement_fifth_third_checking(filename, session):
         os.rename(filepath, f"import/archive/{filename}")
 
 
-def import_statement_wells_fargo(filename, session):
+def import_statement_wells_fargo(filename, session, category_mapper):
     # TODO: This is sloppy. Is a copy and paste from a shitty PDF table.
     #  Split row with space. First element is date, last is amount, rest is source
 
@@ -211,7 +211,7 @@ def import_statement_wells_fargo(filename, session):
                 description=description,
                 notes=trans_number,
                 account=account,
-                category=do_category_mapping(description, session),
+                category=category_mapper.do_category_mapping(description, session),
                 date_created=date,
                 date_imported=datetime.now()
             )

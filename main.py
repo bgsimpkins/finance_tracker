@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from finance_data_models import create_db_from_models, db_connect, test_add_transaction
 from import_tools import import_accounts, import_categories, import_category_mappings, import_statement_chase_slate, import_statement_fifth_third_checking, import_statement_wells_fargo
 from sqlalchemy.orm import Session
+from rule_logic import CategoryMapper
 
 def load_creds():
     load_dotenv()
@@ -26,6 +27,7 @@ def load_creds():
 def do_imports(engine, config_vals):
 
     session = Session(engine)
+    category_mapper = CategoryMapper()
     # Loop through imports/ dir and process
     for f in os.listdir("import"):
 
@@ -36,11 +38,11 @@ def do_imports(engine, config_vals):
         elif f == "category_mappings.csv" and config_vals["import_category_mappings"]:
             import_category_mappings("category_mappings.csv", session)
         elif f[0:5] == "chase":
-            import_statement_chase_slate(f"{f}", session)
+            import_statement_chase_slate(f"{f}", session, category_mapper)
         elif f[0:11] == "fifth_third":
-            import_statement_fifth_third_checking(f"{f}", session)
+            import_statement_fifth_third_checking(f"{f}", session, category_mapper)
         elif f[0:11] == "wells_fargo":
-            import_statement_wells_fargo(f"{f}", session)
+            import_statement_wells_fargo(f"{f}", session, category_mapper)
 
 
 if __name__ == '__main__':

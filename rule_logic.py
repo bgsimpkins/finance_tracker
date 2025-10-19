@@ -7,7 +7,7 @@ class CategoryMapper:
     def __init__(self):
         pass
 
-    def do_category_mapping(source_value, session):
+    def do_category_mapping(self, source_value, session):
 
         # Use default as placeholder
         stmt = select(TransactionCategory).where(TransactionCategory.name == "default")
