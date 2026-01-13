@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from finance_data_models import Account, Transaction, TransactionCategory, CategoryMapping, account_exists, get_category_for_name
+from finance_data_models import Account, Transaction, TransactionCategory, CategoryMapping, account_exists, get_category_for_name, get_category_mapping
 from rule_logic import CategoryMapper
 from sqlalchemy import select
 
@@ -12,7 +12,7 @@ def import_accounts(filepath, session):
     df = pd.read_csv(f"import/{filepath}")
     df = df.replace({np.nan}, None)     # Pandas converts empty cells to NAN. Covert to None/NULL
     for i, row in df.iterrows():
-
+        # Only import if not exists
         if not account_exists(row["name"], session):
             account = Account(
                 account_number=row["account_number"],
@@ -35,6 +35,7 @@ def import_categories(filepath, session):
     df = df.replace({np.nan}, None)  # Pandas converts empty cells to NAN. Covert to None/NULL
 
     for i, row in df.iterrows():
+        # Only import if not exists
         if not get_category_for_name(row["name"], session):
             print(f"Adding category- {row['name']}")
             category = TransactionCategory(
@@ -59,6 +60,7 @@ def import_category_mappings(filepath, session):
 
     for i, row in df.iterrows():
         category = get_category_for_name(row["category_name"], session)
+
         if category:
             mapping = CategoryMapping(
                 source_value=row["source_value"],
@@ -69,7 +71,12 @@ def import_category_mappings(filepath, session):
                 description=row["description"],
                 date_created=datetime.now()
             )
-            session.add(mapping)
+            # Only import if not exists
+            category_mapping = get_category_mapping(mapping.mapping_rule, mapping.param1, session, source_value=mapping.source_value)
+            if not category_mapping:
+                session.add(mapping)
+            else:
+                print(f"category mapping: {row['source_value']} | {row['mapping_rule']} | {row['param1']} : exists!")
         else:
             print(f"Can't find freaking category for mapping!!!! {row['category_name']}")
 

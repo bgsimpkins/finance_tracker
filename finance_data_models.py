@@ -129,6 +129,7 @@ def create_db_from_models(engine, drop_all=False):
 
     return Base
 
+
 # TODO: Should just return account?
 def account_exists(account_name, session):
     stmt = select(Account).where(Account.name == account_name).exists()
@@ -168,3 +169,13 @@ def test_add_transaction(engine):
     )
     session.add_all([trans])
     session.commit()
+
+
+def get_category_mapping(mapping_rule, param1, session, source_value='description'):
+    stmt = select(CategoryMapping). \
+        where(CategoryMapping.source_value == source_value). \
+        where(CategoryMapping.mapping_rule == mapping_rule). \
+        where(CategoryMapping.param1 == param1)
+    return session.scalar(stmt)
+
+
