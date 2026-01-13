@@ -113,7 +113,7 @@ def import_statement_chase_slate(filename, session, category_mapper:CategoryMapp
                 amount=-float(amount),
                 description=description,
                 account=account,
-                category=category_mapper.do_category_mapping(description, session),
+                category_id=category_mapper.do_category_mapping(description, session),
                 date_created=date,
                 date_imported=datetime.now()
             )
@@ -160,7 +160,7 @@ def import_statement_fifth_third_checking(filename, session, category_mapper):
                 amount=-float(amount),
                 description=description,
                 account=account,
-                category=category_mapper.do_category_mapping(description, session),
+                category_id=category_mapper.do_category_mapping(description, session),
                 date_created=date,
                 date_imported=datetime.now()
             )
@@ -211,7 +211,7 @@ def import_statement_wells_fargo(filename, session, category_mapper):
                 description=description,
                 notes=trans_number,
                 account=account,
-                category=category_mapper.do_category_mapping(description, session),
+                category_id=category_mapper.do_category_mapping(description, session),
                 date_created=date,
                 date_imported=datetime.now()
             )
